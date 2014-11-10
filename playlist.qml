@@ -15,50 +15,53 @@ Item {
         property string description: "This plugin shows a playlist and saves "
     }
 
+    Connections {
+        target: cppInterface
+        onCurrentTrackChanged: {
+
+            //Append to playlist
+            playlistModel.append({track:cppInterface.currentTrack})
+
+            //TODO:Save in playlist-folder
+
+
+        }
+    }
+
     // The current playlist
     ListView {
         id: playlist
         width: 200
 
+        clip:true
         anchors.margins: 10
         anchors.left: parent.left
+        anchors.right: root.right
         anchors.top: parent.top
         anchors.bottom: btn_OpenPlaylistfolder.top
+
         model: playlistModel
-        delegate: contactDelegate
+        delegate: playlistDelegate
         //highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
         //focus: true
 
         ListModel {
              id: playlistModel
-
-             // Example data
-             ListElement {
-                 artist: "Bill Smith"
-                 track: "555 3264"
-             }
-             ListElement {
-                 artist: "John Brown"
-                 track: "Bootyshaker"
-             }
-             ListElement {
-                 artist: "Sam Wise"
-                 track: "555 0473"
-             }
-        }
-
-        Component.onCompleted: {
-            //playlistModel.append({text: "lala"})
         }
     }
 
     // Delegate representing playlist items
     Component {
-        id: contactDelegate
+        id: playlistDelegate
         Item {
-            width: 180; height: 20
+            width: 120;
+            height: 20
             Column {
-                Text { text: '<b>' + index + '</b>  ' + artist + " — " + track }
+                Text {
+                    width: parent.width
+                    text: '<b>' + (index+1) + '</b>  ' + track
+                    wrapMode: Text.WordWrap
+                }
             }
         }
     }
@@ -74,5 +77,8 @@ Item {
         }
     }
 
-
+    Component.onCompleted: {
+       console.log(cppInterface.getApplicationSupportFolder() + "Native Instruments/Traktor Scrobbler/playlists")
+       cppInterface.createDir(cppInterface.getApplicationSupportFolder() + "Native Instruments/Traktor Scrobbler/playlists")
+    }
 }
