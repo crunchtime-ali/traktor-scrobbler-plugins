@@ -66,7 +66,7 @@ Item {
 
     // initializing the plugin
     Component.onCompleted: {
-        if (!Qt.platform.os === "osx") {
+        if (Qt.platform.os !== "osx") {
             nicecastStatusText.color = 'red';
             nicecastStatusText.text = "The Nicecast-plugin only works on OS X";
         }
