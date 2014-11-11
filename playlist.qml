@@ -5,6 +5,9 @@ Item {
     id: root
     anchors.margins: 10
 
+    // properties of the plugin
+    property string playlistFolder: cppInterface.getApplicationSupportFolder() + "Native Instruments/Traktor Scrobbler/playlists/"
+    property string playlistFilename
 
     //PLUGININFO
     Item {
@@ -15,16 +18,26 @@ Item {
         property string description: "This plugin shows a playlist and saves "
     }
 
+    // event handlers for C++ events
     Connections {
         target: cppInterface
+
+        onConnectedChanged: {
+            if (cppInterface.connected){
+                playlistModel.clear();
+                updatePlaylistFilename();
+                console.log("playlist cleared");
+            }
+        }
+
         onCurrentTrackChanged: {
+            // Append new track to playlist
+            if (cppInterface.currentTrack!='none'){
+                playlistModel.append({track:cppInterface.currentTrack})
+            }
 
-            //Append to playlist
-            playlistModel.append({track:cppInterface.currentTrack})
-
-            //TODO:Save in playlist-folder
-
-
+            // Save in playlist-folder
+            cppInterface.writeToFile(root.playlistFolder + playlistFilename, playlistModel.getPlaylist());
         }
     }
 
@@ -47,6 +60,17 @@ Item {
 
         ListModel {
              id: playlistModel
+
+             function getPlaylist(){
+                 var playlistString = '';
+                 for (var i = 0; i < playlistModel.count; i++) {
+                    var trackNum = i+1;
+                    playlistString += (trackNum<=9 ? '0' + trackNum  : trackNum ) + ' ' +
+                                      playlistModel.get(i).track + "\r\n";
+                 }
+
+                 return playlistString
+             }
         }
     }
 
@@ -69,16 +93,40 @@ Item {
     // A button which opens the playlist folder
     Button {
         id: btn_OpenPlaylistfolder
-        anchors.bottom : root.bottom
         text: "Open playlist folder"
 
-        onClicked: {
+        anchors.bottom : root.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
 
+        onClicked: {
+            cppInterface.openDirectory(playlistFolder);
         }
     }
 
+    // initializing the plugin
     Component.onCompleted: {
-       console.log(cppInterface.getApplicationSupportFolder() + "Native Instruments/Traktor Scrobbler/playlists")
-       cppInterface.createDir(cppInterface.getApplicationSupportFolder() + "Native Instruments/Traktor Scrobbler/playlists")
+        cppInterface.createDir(root.playlistFolder);
+        updatePlaylistFilename();
+    }
+
+    // Update the playlist's filename to the current date-time
+    function updatePlaylistFilename() {
+        playlistFilename = "playlist_" + getCurrentDate() + ".txt";
+    }
+
+    // Helper function to determine a date-time string
+    function getCurrentDate() {
+    var currentDate = new Date();
+        var d = currentDate.getDate();
+        var m = currentDate.getMonth() + 1;
+        var y = currentDate.getFullYear();
+        var h = currentDate.getHours();
+        var mi = currentDate.getMinutes();
+
+        return '' + y + '-' +
+                (m<=9 ? '0' + m  : m ) + '-' +
+                (d<=9 ? '0' + d  : d ) + '_' +
+                (h<=9 ? '0' + h  : h ) + 'h' +
+                (m<=9 ? '0' + mi : mi) + 'm';
     }
 }
